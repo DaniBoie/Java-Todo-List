@@ -133,6 +133,56 @@ class ToDoFrame extends JFrame {
       add(createButtons(), BorderLayout.EAST);
     }
 
+    private void reorganize() {
+      DefaultListModel<String> organizedData = new DefaultListModel<>();
+      TreeMap<Integer, ArrayList<String>> dataMap = new TreeMap<>();
+
+      ListModel<String> oldData = list.getModel();
+      ArrayList<String> done = new ArrayList<>();
+
+      for (int i = 0; i < oldData.getSize(); i++) {
+        String itemName = oldData.getElementAt(i);
+        itemName = matchStrikeThrough(itemName);
+        ToDoItem item = listItems.get(itemName);
+
+        if (item.done) {
+          done.add(itemName);
+        } else {
+
+          ArrayList<String> priorityArray = dataMap.get(item.priority);
+
+          if (priorityArray != null) {
+            priorityArray.add(itemName);
+          } else {
+            priorityArray = new ArrayList<>();
+            priorityArray.add(itemName);
+            dataMap.put(item.priority, priorityArray);
+          }
+
+        }
+      }
+
+      for (ArrayList<String> items : dataMap.values()) {
+        System.out.println("Priority List -> " + items);
+
+        Collections.sort(items);
+
+        organizedData.addAll(items);
+
+        // for (String item : items) {
+        // // if string matches done REGEX string replace with regular text.
+        // // item = matchStrikeThrough(item);
+        // organizedData.addElement(item);
+        // }
+      }
+      for (String itemName : done) {
+        organizedData.addElement("<html><strike>" + itemName + "</strike></html>");
+      }
+
+      listData = organizedData;
+      list.setModel(organizedData);
+    }
+
     private JList<String> createList() {
 
       listData = new DefaultListModel<>();
@@ -164,54 +214,6 @@ class ToDoFrame extends JFrame {
       return buttonPanel;
     }
 
-    private void reorganize() {
-      DefaultListModel<String> organizedData = new DefaultListModel<>();
-      TreeMap<Integer, ArrayList<String>> dataMap = new TreeMap<>();
-
-      ListModel<String> oldData = list.getModel();
-      ArrayList<String> done = new ArrayList<>();
-
-      for (int i = 0; i < oldData.getSize(); i ++) {
-        String itemName = oldData.getElementAt(i);
-        itemName = matchStrikeThrough(itemName);
-        ToDoItem item = listItems.get(itemName);
-
-        if (item.done) {
-          done.add(itemName);
-        } else {
-
-          ArrayList<String> priorityArray = dataMap.get(item.priority);
-
-          if (priorityArray != null) {
-            priorityArray.add(itemName);
-          } else {
-            priorityArray = new ArrayList<>();
-            priorityArray.add(itemName);
-            dataMap.put(item.priority, priorityArray);
-          }
-
-        }
-      }
-
-      for (ArrayList<String> items : dataMap.values()) {
-        // organizedData.addElement(itemName);
-        System.out.println("Priority List -> " + items);
-        
-        Collections.sort(items);
-
-        for (String item : items) {
-          // if string matches done REGEX string replace with regular text.
-          item = matchStrikeThrough(item);
-          organizedData.addElement(item);
-        }
-      }
-      for (String itemName : done) {
-        organizedData.addElement("<html><strike>" + itemName + "</strike></html>");
-      }
-
-      listData = organizedData;
-      list.setModel(organizedData);
-    }
   }
 
   class RightPanel extends JPanel {
@@ -330,6 +332,45 @@ class ToDoFrame extends JFrame {
       }
     }
 
+    RightPanel() {
+
+      months30 = new ArrayList<String>();
+      String[] months30Static = { "April", "June", "September", "November" };
+      months30.addAll(Arrays.asList(months30Static));
+
+      setLayout(new GridLayout(5, 1));
+      add(createItemPanel());
+      add(createPriorityPanel());
+      add(createDeadlinePanel());
+      add(createNotesPanel());
+      add(createButtons());
+    }
+
+    private void clearFields() {
+      itemText.setText("");
+      priorityText.setText("");
+      noteText.setText("");
+
+      monthDropdown.setSelectedIndex(0);
+      dayDropdown.setSelectedIndex(0);
+      yearDropdown.setSelectedIndex(0);
+
+      isNew = true;
+    }
+
+    private void populate(ToDoItem item) {
+      oldName = item.name;
+
+      itemText.setText(item.name);
+      priorityText.setText(String.valueOf(item.priority));
+      monthDropdown.setSelectedItem(item.deadline.month);
+      dayDropdown.setSelectedIndex(item.deadline.day - 1);
+      yearDropdown.setSelectedItem(String.valueOf(item.deadline.year));
+      noteText.setText(item.notes);
+
+      isNew = false;
+    }
+
     private JPanel createItemPanel() {
       JPanel itemPanel = new JPanel();
 
@@ -421,44 +462,7 @@ class ToDoFrame extends JFrame {
       return buttonPanel;
     }
 
-    private void clearFields() {
-      itemText.setText("");
-      priorityText.setText("");
-      noteText.setText("");
-
-      monthDropdown.setSelectedIndex(0);
-      dayDropdown.setSelectedIndex(0);
-      yearDropdown.setSelectedIndex(0);
-
-      isNew = true;
-    }
-
-    private void populate(ToDoItem item) {
-      oldName = item.name;
-
-      itemText.setText(item.name);
-      priorityText.setText(String.valueOf(item.priority));
-      monthDropdown.setSelectedItem(item.deadline.month);
-      dayDropdown.setSelectedIndex(item.deadline.day - 1);
-      yearDropdown.setSelectedItem(String.valueOf(item.deadline.year));
-      noteText.setText(item.notes);
-
-      isNew = false;
-    }
-
-    RightPanel() {
-
-      months30 = new ArrayList<String>();
-      String[] months30Static = {"April", "June", "September", "November"};
-      months30.addAll(Arrays.asList(months30Static));
-
-      setLayout(new GridLayout(5, 1));
-      add(createItemPanel());
-      add(createPriorityPanel());
-      add(createDeadlinePanel());
-      add(createNotesPanel());
-      add(createButtons());
-    }
+ 
   }
 
   private String matchStrikeThrough(String itemText) {
