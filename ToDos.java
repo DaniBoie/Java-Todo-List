@@ -19,16 +19,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.awt.event.ActionEvent;
-import java.time.LocalDate;
+// import java.time.LocalDate;
+
+class Deadline {
+  public String month;
+  public int day;
+  public int year;
+
+  Deadline(String month, int day, int year) {
+    this.month = month;
+    this.day = day;
+    this.year = year;
+  }
+}
 
 class ToDoItem {
   public String name;
   public int priority;
-  public LocalDate deadline;
+  public Deadline deadline;
   public String notes;
   public Boolean done;
 
-  ToDoItem(String name, int priority, LocalDate deadline, String notes) {
+  ToDoItem(String name, int priority, Deadline deadline, String notes) {
     this.name = name;
     this.priority = priority;
     this.deadline = deadline;
@@ -40,6 +52,9 @@ class ToDoItem {
 class ToDoFrame extends JFrame {
   private DefaultListModel<String> listData;
   private HashMap<String, ToDoItem> listItems;
+  private LeftPanel leftPanel;
+  private RightPanel rightPanel;
+  private boolean isNew = true;
 
 
   class LeftPanel extends JPanel {
@@ -49,9 +64,13 @@ class ToDoFrame extends JFrame {
       // Button Variables Here
       public void mouseReleased(MouseEvent event) {
 
-        System.out.print("You clicked: ");
-        System.out.println(list.getSelectedValue());
+        String selectedText = list.getSelectedValue();
+        System.out.print("You clicked: " + selectedText);
 
+        ToDoItem selectedItem = listItems.get(selectedText);
+        
+        isNew = false;
+        rightPanel.populate(selectedItem);
       }
       public void mouseClicked(MouseEvent event) {}
       public void mouseExited(MouseEvent event) {}
@@ -76,6 +95,7 @@ class ToDoFrame extends JFrame {
         if (selection != null) {
           listData.removeElement(selection);
           listItems.remove(selection);
+          rightPanel.clearFields();
           System.out.println("Deleted: " + selection);
         }
       }
@@ -126,27 +146,59 @@ class ToDoFrame extends JFrame {
     JComboBox<String> monthDropdown;
     JComboBox<String> dayDropdown;
     JComboBox<String> yearDropdown;
+    JTextArea noteText;
     ArrayList<String> months30;
+    String oldName;
 
     class SaveListener implements ActionListener {
       public void actionPerformed(ActionEvent event) {
         // get values saved in name label, priority label, and notes label
+        String itemName = itemText.getText();
+        int itemPriority = Integer.parseInt(priorityText.getText());
+        String itemNote = noteText.getText();
+
+        String itemMonth = (String) monthDropdown.getSelectedItem();
+        int itemDay = Integer.parseInt((String) dayDropdown.getSelectedItem());
+        int itemYear = Integer.parseInt((String) yearDropdown.getSelectedItem());
+        Deadline itemDeadline = new Deadline(itemMonth, itemDay, itemYear);
+
+        ToDoItem newItem = new ToDoItem(itemName, itemPriority, itemDeadline, itemNote);
+
+        
         // If no value for name INVALID
         // If no value for priority INVALID, must be > 0
         // Notes is optional
         // INVALID values, warning dialog "Invalid input!", else dialog "Item saved!"
 
-        // create ToDoItem associtaed with values
-
-        // add ToDoItem to HashMap
-
-        // add item name to ToDoList
+        if (isNew) {
+          if (listData.contains(itemName)) {
+            // SEND ERROR CANNOT CREATE WITH THIS NAME
+          } else {
+            listItems.put(itemName, newItem);
+            listData.addElement(itemName);
+          }
+        } else {
+          listItems.remove(oldName);
+          listData.removeElement(oldName);
+          listItems.put(itemName, newItem);
+          listData.addElement(itemName);
+        }
 
         // clear all inputs
-        System.out.println("Item Name: " + itemText.getText());
-        System.out.println("Item Priority: " + priorityText.getText());
-        itemText.setText("");
-        priorityText.setText("");
+        // itemText.setText("");
+        // priorityText.setText("");
+        // noteText.setText("");
+
+        // monthDropdown.setSelectedIndex(0);
+        // dayDropdown.setSelectedIndex(0);
+        // yearDropdown.setSelectedIndex(0);
+        clearFields();
+      }
+    }
+
+    class ClearListener implements ActionListener {
+      public void actionPerformed(ActionEvent event) {
+        clearFields();
       }
     }
 
@@ -267,8 +319,8 @@ class ToDoFrame extends JFrame {
     private JPanel createNotesPanel() {
       JPanel notesPanel = new JPanel();
 
-      JTextArea textarea = new JTextArea(3, 25);
-      JScrollPane notesPane = new JScrollPane(textarea);
+      noteText = new JTextArea(3, 25);
+      JScrollPane notesPane = new JScrollPane(noteText);
       
       notesPanel.add(new JLabel("Notes: "));
       notesPanel.add(notesPane);
@@ -283,7 +335,7 @@ class ToDoFrame extends JFrame {
       saveButton.addActionListener(new SaveListener());
 
       JButton newButton = new JButton("New Item");
-      newButton.addActionListener(new SaveListener());
+      newButton.addActionListener(new ClearListener());
 
       buttonPanel.add(saveButton);
       buttonPanel.add(newButton);
@@ -291,6 +343,30 @@ class ToDoFrame extends JFrame {
       return buttonPanel;
     }
 
+    private void clearFields() {
+      itemText.setText("");
+      priorityText.setText("");
+      noteText.setText("");
+
+      monthDropdown.setSelectedIndex(0);
+      dayDropdown.setSelectedIndex(0);
+      yearDropdown.setSelectedIndex(0);
+
+      isNew = true;
+    }
+
+    private void populate(ToDoItem item) {
+      oldName = item.name;
+
+      itemText.setText(item.name);
+      priorityText.setText(String.valueOf(item.priority));
+      monthDropdown.setSelectedItem(item.deadline.month);
+      dayDropdown.setSelectedIndex(item.deadline.day - 1);
+      yearDropdown.setSelectedItem(String.valueOf(item.deadline.year));
+      noteText.setText(item.notes);
+
+      isNew = false;
+    }
     RightPanel() {
 
       months30 = new ArrayList<String>();
@@ -312,10 +388,10 @@ class ToDoFrame extends JFrame {
     listItems = new HashMap<>();
     
     setLayout(new GridLayout(1, 2));
-
-    add(new LeftPanel());
-    add(new RightPanel());
-    
+    leftPanel = new LeftPanel();
+    rightPanel = new RightPanel();
+    add(leftPanel);
+    add(rightPanel);
 
   }
 }
