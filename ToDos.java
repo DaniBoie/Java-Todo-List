@@ -5,6 +5,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -17,7 +18,11 @@ import java.awt.event.MouseEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
 // import java.time.LocalDate;
 
@@ -63,9 +68,17 @@ class ToDoFrame extends JFrame {
     class ItemClick implements MouseListener {
       // Button Variables Here
       public void mouseReleased(MouseEvent event) {
+        String pattern = "^<html><strike>(.*)</strike></html>$";
+        Pattern strikeoutPattern = Pattern.compile(pattern);
 
         String selectedText = list.getSelectedValue();
         System.out.print("You clicked: " + selectedText);
+
+        Matcher m = strikeoutPattern.matcher(selectedText);
+
+        if (m.find()) {
+          selectedText = m.group(1);
+        }
 
         ToDoItem selectedItem = listItems.get(selectedText);
         
@@ -80,11 +93,24 @@ class ToDoFrame extends JFrame {
 
     class DoneListener implements ActionListener {
       public void actionPerformed(ActionEvent event) {
-        String selected = list.getSelectedValue();
-        if (selected != null) {
-          System.out.println("You completed: " + list.getSelectedValue());
-          listItems.get(selected).done = true;
-          // strikethrough
+
+        String selectedText = list.getSelectedValue();
+
+        if (selectedText != null) {
+
+          selectedText = matchStrikeThrough(selectedText);
+        
+          System.out.println("You completed: " + selectedText);
+
+          ToDoItem item = listItems.get(selectedText);
+
+          if (item.done) {
+            item.done = false;
+          } else {
+            item.done = true;
+          }
+
+          reorganize();
         }
       }
     }
@@ -94,7 +120,7 @@ class ToDoFrame extends JFrame {
         String selection = list.getSelectedValue();
         if (selection != null) {
           listData.removeElement(selection);
-          listItems.remove(selection);
+          listItems.remove(matchStrikeThrough(selection));
           rightPanel.clearFields();
           System.out.println("Deleted: " + selection);
         }
@@ -138,6 +164,54 @@ class ToDoFrame extends JFrame {
       return buttonPanel;
     }
 
+    private void reorganize() {
+      DefaultListModel<String> organizedData = new DefaultListModel<>();
+      TreeMap<Integer, ArrayList<String>> dataMap = new TreeMap<>();
+
+      ListModel<String> oldData = list.getModel();
+      ArrayList<String> done = new ArrayList<>();
+
+      for (int i = 0; i < oldData.getSize(); i ++) {
+        String itemName = oldData.getElementAt(i);
+        itemName = matchStrikeThrough(itemName);
+        ToDoItem item = listItems.get(itemName);
+
+        if (item.done) {
+          done.add(itemName);
+        } else {
+
+          ArrayList<String> priorityArray = dataMap.get(item.priority);
+
+          if (priorityArray != null) {
+            priorityArray.add(itemName);
+          } else {
+            priorityArray = new ArrayList<>();
+            priorityArray.add(itemName);
+            dataMap.put(item.priority, priorityArray);
+          }
+
+        }
+      }
+
+      for (ArrayList<String> items : dataMap.values()) {
+        // organizedData.addElement(itemName);
+        System.out.println("Priority List -> " + items);
+        
+        Collections.sort(items);
+
+        for (String item : items) {
+          // if string matches done REGEX string replace with regular text.
+          item = matchStrikeThrough(item);
+          organizedData.addElement(item);
+        }
+      }
+      for (String itemName : done) {
+        organizedData.addElement("<html><strike>" + itemName + "</strike></html>");
+      }
+
+      listData = organizedData;
+      list.setModel(organizedData);
+    }
   }
 
   class RightPanel extends JPanel {
@@ -178,21 +252,26 @@ class ToDoFrame extends JFrame {
             listData.addElement(itemName);
           }
         } else {
-          listItems.remove(oldName);
-          listData.removeElement(oldName);
-          listItems.put(itemName, newItem);
-          listData.addElement(itemName);
+          if (!oldName.equals(itemName) && listData.contains(itemName)) {
+            // Error, not allowed to change newName to name already in list.
+          } else {
+            if (oldName.equals(itemName)) {
+              listItems.put(itemName, newItem);
+            } else {
+              listItems.remove(oldName);
+              listData.removeElement(oldName);
+              listItems.put(itemName, newItem);
+              listData.addElement(itemName);
+            }
+            
+          } 
         }
 
-        // clear all inputs
-        // itemText.setText("");
-        // priorityText.setText("");
-        // noteText.setText("");
+        
+        leftPanel.list.setSelectedValue(itemName, true);
+        populate(newItem);
+        leftPanel.reorganize();
 
-        // monthDropdown.setSelectedIndex(0);
-        // dayDropdown.setSelectedIndex(0);
-        // yearDropdown.setSelectedIndex(0);
-        clearFields();
       }
     }
 
@@ -205,7 +284,6 @@ class ToDoFrame extends JFrame {
     class MonthListener implements ActionListener {      
       public void actionPerformed(ActionEvent event) {
         String selected = (String) monthDropdown.getSelectedItem();
-        System.out.println("Month Selected: " + selected);
         
         int daysInMonth;
         if (months30.contains(selected)) {
@@ -367,6 +445,7 @@ class ToDoFrame extends JFrame {
 
       isNew = false;
     }
+
     RightPanel() {
 
       months30 = new ArrayList<String>();
@@ -382,6 +461,16 @@ class ToDoFrame extends JFrame {
     }
   }
 
+  private String matchStrikeThrough(String itemText) {
+    String pattern = "^<html><strike>(.*)</strike></html>$";
+    Pattern strikeoutPattern = Pattern.compile(pattern);
+    Matcher m = strikeoutPattern.matcher(itemText);
+    if (m.find()) {
+      return m.group(1);
+    } else {
+      return itemText;
+    }
+  }
 
   ToDoFrame() {
 
