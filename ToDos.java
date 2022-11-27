@@ -60,30 +60,17 @@ class ToDoItem {
 class ToDoFrame extends JFrame {
   private DefaultListModel<String> listData;
   private HashMap<String, ToDoItem> listItems;
-  private LeftPanel leftPanel;
   private RightPanel rightPanel;
   private boolean isNew = true;
-
+  private LeftPanel leftPanel;
 
   class LeftPanel extends JPanel {
     private JList<String> list;
 
     class ItemClick implements MouseListener {
-      // Button Variables Here
       public void mouseReleased(MouseEvent event) {
-        String pattern = "^<html><strike>(.*)</strike></html>$";
-        Pattern strikeoutPattern = Pattern.compile(pattern);
-
         String selectedText = list.getSelectedValue();
-        System.out.print("You clicked: " + selectedText);
-
-        Matcher m = strikeoutPattern.matcher(selectedText);
-
-        if (m.find()) {
-          selectedText = m.group(1);
-        }
-
-        ToDoItem selectedItem = listItems.get(selectedText);
+        ToDoItem selectedItem = listItems.get(matchStrikeThrough(selectedText));
         
         isNew = false;
         rightPanel.populate(selectedItem);
@@ -101,18 +88,13 @@ class ToDoFrame extends JFrame {
 
         if (selectedText != null) {
 
-          selectedText = matchStrikeThrough(selectedText);
-        
-          System.out.println("You completed: " + selectedText);
-
-          ToDoItem item = listItems.get(selectedText);
+          ToDoItem item = listItems.get(matchStrikeThrough(selectedText));
 
           if (item.done) {
             item.done = false;
           } else {
             item.done = true;
           }
-
           reorganize();
         }
       }
@@ -166,18 +148,10 @@ class ToDoFrame extends JFrame {
       }
 
       for (ArrayList<String> items : dataMap.values()) {
-        System.out.println("Priority List -> " + items);
-
         Collections.sort(items);
-
         organizedData.addAll(items);
-
-        // for (String item : items) {
-        // // if string matches done REGEX string replace with regular text.
-        // // item = matchStrikeThrough(item);
-        // organizedData.addElement(item);
-        // }
       }
+
       for (String itemName : done) {
         organizedData.addElement("<html><strike>" + itemName + "</strike></html>");
       }
@@ -220,15 +194,15 @@ class ToDoFrame extends JFrame {
   }
 
   class RightPanel extends JPanel {
-    JTextField itemText;
-    JTextField priorityText;
     JComboBox<String> monthDropdown;
     JComboBox<String> dayDropdown;
     JComboBox<String> yearDropdown;
-    JTextArea noteText;
-    ArrayList<String> months30;
-    String oldName;
     JRadioButton deadlineButton;
+    ArrayList<String> months30;
+    JTextField priorityText;
+    JTextField itemText;
+    JTextArea noteText;
+    String oldName;
 
     class SaveListener implements ActionListener {
       public void actionPerformed(ActionEvent event) {
@@ -281,8 +255,6 @@ class ToDoFrame extends JFrame {
           } else {
             listItems.put(itemName, newItem);
             listData.addElement(itemName);
-            // THROW SUCCESS
-            JOptionPane.showMessageDialog(rightPanel, "Item Saved!", "Success", 1);
           }
         } else {
           if (!oldName.equals(itemName) && listData.contains(itemName)) {
@@ -298,16 +270,13 @@ class ToDoFrame extends JFrame {
               listItems.put(itemName, newItem);
               listData.addElement(itemName);
             }
-            // THROW SUCCESS
-            // JOptionPane success = new JOptionPane("Item saved!", 1, 0);
-            JOptionPane.showMessageDialog(rightPanel, "Item Saved!", "Success", 1);
           } 
         }
 
         populate(newItem);
         leftPanel.reorganize();
         leftPanel.list.setSelectedValue(itemName, true);
-
+        JOptionPane.showMessageDialog(rightPanel, "Item Saved!", "Success", 1);
       }
     }
 
@@ -549,7 +518,6 @@ class ToDoFrame extends JFrame {
   }
 
   ToDoFrame() {
-
     listItems = new HashMap<>();
     
     setLayout(new GridLayout(1, 2));
@@ -557,7 +525,6 @@ class ToDoFrame extends JFrame {
     rightPanel = new RightPanel();
     add(leftPanel);
     add(rightPanel);
-
   }
 }
 
@@ -573,10 +540,7 @@ class ToDos {
   public static void main(String[] args) {
     // Instantiating Application Frame
     System.out.println("Launching ToDo Application...");
-    JFrame mainFrame = new ToDoFrame();
-
-    // Rendering Application Frame
-    renderFrame(mainFrame);
+    renderFrame(new ToDoFrame());
     System.out.println("ToDo Application Opened!");
   }
 }
