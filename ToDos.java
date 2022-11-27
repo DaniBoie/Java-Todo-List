@@ -10,6 +10,8 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
+
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
@@ -24,7 +26,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
-// import java.time.LocalDate;
 
 class Deadline {
   public String month;
@@ -44,12 +45,14 @@ class ToDoItem {
   public Deadline deadline;
   public String notes;
   public Boolean done;
+  public Boolean hasDeadline;
 
-  ToDoItem(String name, int priority, Deadline deadline, String notes) {
+  ToDoItem(String name, int priority, Deadline deadline, String notes, Boolean hasDeadline) {
     this.name = name;
     this.priority = priority;
     this.deadline = deadline;
     this.notes = notes;
+    this.hasDeadline = hasDeadline;
     done = false;
   }
 }
@@ -225,37 +228,67 @@ class ToDoFrame extends JFrame {
     JTextArea noteText;
     ArrayList<String> months30;
     String oldName;
+    JRadioButton deadlineButton;
 
     class SaveListener implements ActionListener {
       public void actionPerformed(ActionEvent event) {
         // get values saved in name label, priority label, and notes label
         String itemName = itemText.getText();
-        int itemPriority = Integer.parseInt(priorityText.getText());
+        // if blank, throw error
+        if (itemName.equals("")) {
+          JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+          return;
+        }
+
+        String priority = priorityText.getText();
+
+        // if blank, throw error
+        if (priority.equals("")) {
+          JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+          return;
+        }
+
+        // if <= 0 or not int, throw error
+        int itemPriority = 0;
+        try {
+          itemPriority = Integer.parseInt(priority);
+          if (itemPriority <= 0) {
+            JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+            return;
+          }
+        } catch (Exception e) {
+          JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+          return;
+        }
+        
+        
         String itemNote = noteText.getText();
 
         String itemMonth = (String) monthDropdown.getSelectedItem();
         int itemDay = Integer.parseInt((String) dayDropdown.getSelectedItem());
         int itemYear = Integer.parseInt((String) yearDropdown.getSelectedItem());
-        Deadline itemDeadline = new Deadline(itemMonth, itemDay, itemYear);
-
-        ToDoItem newItem = new ToDoItem(itemName, itemPriority, itemDeadline, itemNote);
 
         
-        // If no value for name INVALID
-        // If no value for priority INVALID, must be > 0
-        // Notes is optional
-        // INVALID values, warning dialog "Invalid input!", else dialog "Item saved!"
+        Deadline itemDeadline = new Deadline(itemMonth, itemDay, itemYear);
+
+        ToDoItem newItem = new ToDoItem(itemName, itemPriority, itemDeadline, itemNote, deadlineButton.isSelected());
 
         if (isNew) {
           if (listData.contains(itemName)) {
-            // SEND ERROR CANNOT CREATE WITH THIS NAME
+            // THROW ERROR CANNOT CREATE WITH THIS NAME
+            JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+            return;
           } else {
             listItems.put(itemName, newItem);
             listData.addElement(itemName);
+            // THROW SUCCESS
+            JOptionPane.showMessageDialog(rightPanel, "Item Saved!", "Success", 1);
           }
         } else {
           if (!oldName.equals(itemName) && listData.contains(itemName)) {
-            // Error, not allowed to change newName to name already in list.
+            // THROW ERROR, not allowed to change newName to name already in list.
+            JOptionPane.showMessageDialog(rightPanel, "Invalid input!", "Error", 0);
+            return;
           } else {
             if (oldName.equals(itemName)) {
               listItems.put(itemName, newItem);
@@ -265,14 +298,15 @@ class ToDoFrame extends JFrame {
               listItems.put(itemName, newItem);
               listData.addElement(itemName);
             }
-            
+            // THROW SUCCESS
+            // JOptionPane success = new JOptionPane("Item saved!", 1, 0);
+            JOptionPane.showMessageDialog(rightPanel, "Item Saved!", "Success", 1);
           } 
         }
 
-        
-        leftPanel.list.setSelectedValue(itemName, true);
         populate(newItem);
         leftPanel.reorganize();
+        leftPanel.list.setSelectedValue(itemName, true);
 
       }
     }
@@ -280,6 +314,20 @@ class ToDoFrame extends JFrame {
     class ClearListener implements ActionListener {
       public void actionPerformed(ActionEvent event) {
         clearFields();
+      }
+    }
+
+    class DeadlineListener implements ActionListener {
+      public void actionPerformed(ActionEvent event) {
+        if (deadlineButton.isSelected()) {
+          monthDropdown.setEnabled(true);
+          yearDropdown.setEnabled(true);
+          dayDropdown.setEnabled(true);
+        } else {
+          monthDropdown.setEnabled(false);
+          yearDropdown.setEnabled(false);
+          dayDropdown.setEnabled(false);
+        }
       }
     }
 
@@ -352,8 +400,13 @@ class ToDoFrame extends JFrame {
       noteText.setText("");
 
       monthDropdown.setSelectedIndex(0);
+      monthDropdown.setEnabled(false);
       dayDropdown.setSelectedIndex(0);
+      dayDropdown.setEnabled(false);
       yearDropdown.setSelectedIndex(0);
+      yearDropdown.setEnabled(false);
+
+      deadlineButton.setSelected(false);
 
       isNew = true;
     }
@@ -363,9 +416,25 @@ class ToDoFrame extends JFrame {
 
       itemText.setText(item.name);
       priorityText.setText(String.valueOf(item.priority));
-      monthDropdown.setSelectedItem(item.deadline.month);
-      dayDropdown.setSelectedIndex(item.deadline.day - 1);
-      yearDropdown.setSelectedItem(String.valueOf(item.deadline.year));
+
+      if (item.hasDeadline) {
+        monthDropdown.setEnabled(true);
+        monthDropdown.setSelectedItem(item.deadline.month);
+        dayDropdown.setEnabled(true);
+        dayDropdown.setSelectedIndex(item.deadline.day - 1);
+        yearDropdown.setEnabled(true);
+        yearDropdown.setSelectedItem(String.valueOf(item.deadline.year));
+        deadlineButton.setSelected(true);
+      } else {
+        monthDropdown.setSelectedIndex(0);
+        monthDropdown.setEnabled(false);
+        dayDropdown.setSelectedIndex(0);
+        dayDropdown.setEnabled(false);
+        yearDropdown.setSelectedIndex(0);
+        yearDropdown.setEnabled(false);
+        deadlineButton.setSelected(false);
+      }
+      
       noteText.setText(item.notes);
 
       isNew = false;
@@ -400,26 +469,29 @@ class ToDoFrame extends JFrame {
       JPanel deadlinePanel = new JPanel();
       String[] months = {"January", "Feburary", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
 
-      JRadioButton deadlineButton = new JRadioButton("Deadline");
+      deadlineButton = new JRadioButton("Deadline");
+      deadlineButton.addActionListener(new DeadlineListener());
+
 
       monthDropdown = new JComboBox<String>();
       for (String month : months) {
         monthDropdown.addItem(month);
       }
       monthDropdown.addActionListener(new MonthListener());
-
+      monthDropdown.setEnabled(false);
 
       dayDropdown = new JComboBox<String>();
       for (int i = 1; i <= 31; i ++) {
         dayDropdown.addItem(String.valueOf(i));
       }
+      dayDropdown.setEnabled(false);
 
       yearDropdown = new JComboBox<String>();
       for (int i = 2022; i <= 2031; i++) {
         yearDropdown.addItem(String.valueOf(i));
       }
       yearDropdown.addActionListener(new YearListener());
-
+      yearDropdown.setEnabled(false);
 
       deadlinePanel.add(deadlineButton);
 
@@ -493,7 +565,7 @@ class ToDos {
 
   public static void renderFrame(JFrame frame) {
     frame.setSize(1000, 700);
-    frame.setTitle("To Do Frame");
+    frame.setTitle("Daniel Ayala | To Do Application");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setVisible(true);
   }
