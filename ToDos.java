@@ -10,6 +10,9 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
 import java.awt.BorderLayout;
@@ -112,10 +115,35 @@ class ToDoFrame extends JFrame {
       }
     }
 
-    LeftPanel() {
-      setLayout(new BorderLayout());
-      add(createList(), BorderLayout.CENTER);
-      add(createButtons(), BorderLayout.EAST);
+    private JList<String> createList() {
+
+      listData = new DefaultListModel<>();
+
+      list = new JList<String>(listData);
+      list.addMouseListener(new ItemClick());
+      return list;
+    }
+
+    private JPanel createButtons() {
+
+      // Button Panel
+      JPanel buttonPanel = new JPanel(new GridLayout(2, 1));
+
+      // Done button
+      JPanel topButtonPanel = new JPanel(new BorderLayout());
+      JButton topButton = new JButton("Toggle Done");
+      topButton.addActionListener(new DoneListener());
+      topButtonPanel.add(topButton, BorderLayout.SOUTH);
+      buttonPanel.add(topButtonPanel);
+
+      // Delete button
+      JPanel bottomButtonPanel = new JPanel(new BorderLayout());
+      JButton bottomButton = new JButton("Delete");
+      bottomButton.addActionListener(new DeleteListener());
+      bottomButtonPanel.add(bottomButton, BorderLayout.NORTH);
+      buttonPanel.add(bottomButtonPanel);
+
+      return buttonPanel;
     }
 
     private void reorganize() {
@@ -160,37 +188,11 @@ class ToDoFrame extends JFrame {
       list.setModel(organizedData);
     }
 
-    private JList<String> createList() {
-
-      listData = new DefaultListModel<>();
-
-      list = new JList<String>(listData);
-      list.addMouseListener(new ItemClick());
-      return list;
+    LeftPanel() {
+      setLayout(new BorderLayout());
+      add(createList(), BorderLayout.CENTER);
+      add(createButtons(), BorderLayout.EAST);
     }
-
-    private JPanel createButtons() {
-
-      // Button Panel
-      JPanel buttonPanel = new JPanel(new GridLayout(2, 1));
-
-      // Done button
-      JPanel topButtonPanel = new JPanel(new BorderLayout());
-      JButton topButton = new JButton("Toggle Done");
-      topButton.addActionListener(new DoneListener());
-      topButtonPanel.add(topButton, BorderLayout.SOUTH);
-      buttonPanel.add(topButtonPanel);
-
-      // Delete button
-      JPanel bottomButtonPanel = new JPanel(new BorderLayout());
-      JButton bottomButton = new JButton("Delete");
-      bottomButton.addActionListener(new DeleteListener());
-      bottomButtonPanel.add(bottomButton, BorderLayout.NORTH);
-      buttonPanel.add(bottomButtonPanel);
-      
-      return buttonPanel;
-    }
-
   }
 
   class RightPanel extends JPanel {
@@ -349,37 +351,6 @@ class ToDoFrame extends JFrame {
       }
     }
 
-    RightPanel() {
-
-      months30 = new ArrayList<String>();
-      String[] months30Static = { "April", "June", "September", "November" };
-      months30.addAll(Arrays.asList(months30Static));
-
-      setLayout(new GridLayout(5, 1));
-      add(createItemPanel());
-      add(createPriorityPanel());
-      add(createDeadlinePanel());
-      add(createNotesPanel());
-      add(createButtons());
-    }
-
-    private void clearFields() {
-      itemText.setText("");
-      priorityText.setText("");
-      noteText.setText("");
-
-      monthDropdown.setSelectedIndex(0);
-      monthDropdown.setEnabled(false);
-      dayDropdown.setSelectedIndex(0);
-      dayDropdown.setEnabled(false);
-      yearDropdown.setSelectedIndex(0);
-      yearDropdown.setEnabled(false);
-
-      deadlineButton.setSelected(false);
-
-      isNew = true;
-    }
-
     private void populate(ToDoItem item) {
       oldName = item.name;
 
@@ -403,10 +374,27 @@ class ToDoFrame extends JFrame {
         yearDropdown.setEnabled(false);
         deadlineButton.setSelected(false);
       }
-      
+
       noteText.setText(item.notes);
 
       isNew = false;
+    }
+
+    private void clearFields() {
+      itemText.setText("");
+      priorityText.setText("");
+      noteText.setText("");
+
+      monthDropdown.setSelectedIndex(0);
+      monthDropdown.setEnabled(false);
+      dayDropdown.setSelectedIndex(0);
+      dayDropdown.setEnabled(false);
+      yearDropdown.setSelectedIndex(0);
+      yearDropdown.setEnabled(false);
+
+      deadlineButton.setSelected(false);
+
+      isNew = true;
     }
 
     private JPanel createItemPanel() {
@@ -414,7 +402,6 @@ class ToDoFrame extends JFrame {
 
       JLabel itemLabel = new JLabel("Item: ");
       itemText = new JTextField(10);
-
 
       itemPanel.add(itemLabel);
       itemPanel.add(itemText);
@@ -436,11 +423,11 @@ class ToDoFrame extends JFrame {
 
     private JPanel createDeadlinePanel() {
       JPanel deadlinePanel = new JPanel();
-      String[] months = {"January", "Feburary", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+      String[] months = { "January", "Feburary", "March", "April", "May", "June", "July", "August", "September",
+          "October", "November", "December" };
 
       deadlineButton = new JRadioButton("Deadline");
       deadlineButton.addActionListener(new DeadlineListener());
-
 
       monthDropdown = new JComboBox<String>();
       for (String month : months) {
@@ -450,7 +437,7 @@ class ToDoFrame extends JFrame {
       monthDropdown.setEnabled(false);
 
       dayDropdown = new JComboBox<String>();
-      for (int i = 1; i <= 31; i ++) {
+      for (int i = 1; i <= 31; i++) {
         dayDropdown.addItem(String.valueOf(i));
       }
       dayDropdown.setEnabled(false);
@@ -481,7 +468,7 @@ class ToDoFrame extends JFrame {
 
       noteText = new JTextArea(3, 25);
       JScrollPane notesPane = new JScrollPane(noteText);
-      
+
       notesPanel.add(new JLabel("Notes: "));
       notesPanel.add(notesPane);
 
@@ -503,7 +490,39 @@ class ToDoFrame extends JFrame {
       return buttonPanel;
     }
 
- 
+    RightPanel() {
+
+      months30 = new ArrayList<String>();
+      String[] months30Static = { "April", "June", "September", "November" };
+      months30.addAll(Arrays.asList(months30Static));
+
+      setLayout(new GridLayout(5, 1));
+      add(createItemPanel());
+      add(createPriorityPanel());
+      add(createDeadlinePanel());
+      add(createNotesPanel());
+      add(createButtons());
+    }
+  }
+
+  class TopMenu extends JMenuBar {
+    class ExitListener implements ActionListener {
+      public void actionPerformed (ActionEvent event) {
+        System.exit(0);
+      }
+    }
+
+    private JMenuItem createExitItem() {
+      JMenuItem exitItem = new JMenuItem("Exit");
+      exitItem.addActionListener(new ExitListener());
+      return exitItem;
+    }
+
+    TopMenu() {
+      JMenu fileMenu = new JMenu("File");
+      fileMenu.add(createExitItem());
+      add(fileMenu);
+    }
   }
 
   private String matchStrikeThrough(String itemText) {
@@ -519,20 +538,20 @@ class ToDoFrame extends JFrame {
 
   ToDoFrame() {
     listItems = new HashMap<>();
-    
-    setLayout(new GridLayout(1, 2));
     leftPanel = new LeftPanel();
     rightPanel = new RightPanel();
+    
+    setLayout(new GridLayout(1, 2));
+    setJMenuBar(new TopMenu());
     add(leftPanel);
     add(rightPanel);
   }
 }
 
 class ToDos {
-
   public static void renderFrame(JFrame frame) {
-    frame.setSize(1000, 700);
-    frame.setTitle("Daniel Ayala | To Do Application");
+    frame.setSize(800, 400);
+    frame.setTitle("Daniel Ayala - 28399460 | To Do Application");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setVisible(true);
   }
@@ -544,4 +563,3 @@ class ToDos {
     System.out.println("ToDo Application Opened!");
   }
 }
-
